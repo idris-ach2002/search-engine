@@ -9,8 +9,27 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
     open-in-view: false
+
+  flyway:
+    enabled: true
 
 server:
   port: 8080
+
+app:
+  storage:
+    books-root: ${BOOK_STORAGE_ROOT:./data/books}
+
+  gutenberg:
+    harvest-url: ${GUTENBERG_HARVEST_URL:https://www.gutenberg.org/robot/harvest?filetypes[]=txt&langs[]=en}
+    minimum-word-count: ${GUTENBERG_MIN_WORDS:10000}
+    download-delay-ms: ${GUTENBERG_DOWNLOAD_DELAY_MS:2000}
+    max-uncompressed-bytes: ${GUTENBERG_MAX_UNCOMPRESSED_BYTES:25000000}
+
+    api:
+      base-url: ${GUTENBERG_API_BASE_URL:https://project-gutenberg-books-api.p.rapidapi.com}
+      host: ${GUTENBERG_API_HOST:project-gutenberg-books-api.p.rapidapi.com}
+      key: ${GUTENBERG_API_KEY:}
+      reserved-requests: ${GUTENBERG_API_RESERVED_REQUESTS:50}

@@ -34,3 +34,9 @@ build/
 
 # Local secrets
 .env
+
+# Local book dataset (never commit Gutenberg text files)
+data/
+
+# Local environment / API keys
+.env
