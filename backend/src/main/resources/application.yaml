@@ -50,3 +50,10 @@ app:
     max-iterations: ${PAGERANK_MAX_ITERATIONS:200}
     lexical-weight: ${RANKING_LEXICAL_WEIGHT:0.85}
     page-rank-weight: ${RANKING_PAGERANK_WEIGHT:0.15}
+
+  suggestions:
+    default-seed-count: ${SUGGESTION_SEED_COUNT:3}
+    default-limit: ${SUGGESTION_LIMIT:10}
+    neighbors-per-seed: ${SUGGESTION_NEIGHBORS_PER_SEED:20}
+    max-seed-count: ${SUGGESTION_MAX_SEED_COUNT:5}
+    max-limit: ${SUGGESTION_MAX_LIMIT:50}
