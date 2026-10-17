@@ -1,5 +1,7 @@
 package com.sorbonne.backend.search.service;
 
+import com.sorbonne.backend.ranking.service.SearchRankingService;
+import com.sorbonne.backend.ranking.service.SearchRankingService.Candidate;
 import com.sorbonne.backend.search.model.AdvancedSearchResponse;
 import com.sorbonne.backend.search.model.SimpleSearchResult;
 import com.sorbonne.backend.search.repository.SearchIndexRepository;
@@ -9,30 +11,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 @Service
 public class AdvancedSearchService {
-
-    private static final Comparator<SimpleSearchResult> RESULT_ORDER =
-            Comparator.comparingLong(SimpleSearchResult::lexicalScore).reversed()
-                    .thenComparing(Comparator.comparingInt(SimpleSearchResult::matchedTerms).reversed())
-                    .thenComparing(result -> result.title().toLowerCase(Locale.ROOT))
-                    .thenComparingLong(SimpleSearchResult::bookId);
-
     private final SearchIndexRepository searchIndexRepository;
     private final RegexTermMatcher termMatcher;
+    private final SearchRankingService rankingService;
 
     public AdvancedSearchService(
             SearchIndexRepository searchIndexRepository,
-            RegexTermMatcher termMatcher
+            RegexTermMatcher termMatcher,
+            SearchRankingService rankingService
     ) {
         this.searchIndexRepository = searchIndexRepository;
         this.termMatcher = termMatcher;
+        this.rankingService = rankingService;
     }
 
     @Transactional(readOnly = true)
@@ -48,8 +44,8 @@ public class AdvancedSearchService {
                 .toList();
 
         List<BookPosting> postings = searchIndexRepository.loadReadyBookPostings(matchingTermIds);
-        List<SimpleSearchResult> rankedResults = aggregate(postings);
-        rankedResults.sort(RESULT_ORDER);
+        SearchRankingService.RankedResults ranking = rankingService.rank(aggregate(postings));
+        List<SimpleSearchResult> rankedResults = ranking.results();
 
         long totalElements = rankedResults.size();
         int totalPages = totalElements == 0
@@ -73,14 +69,16 @@ public class AdvancedSearchService {
                 termMatches.nfaStates(),
                 termMatches.dfaStates(),
                 termMatches.minimizedDfaStates(),
+                ranking.pageRankApplied(),
+                ranking.lexicalWeight(),
+                ranking.pageRankWeight(),
                 elapsedMillis,
                 content
         );
     }
 
-    private static List<SimpleSearchResult> aggregate(List<BookPosting> postings) {
+    private static List<Candidate> aggregate(List<BookPosting> postings) {
         Map<Long, Accumulator> byBook = new HashMap<>();
-
         for (BookPosting posting : postings) {
             Accumulator accumulator = byBook.computeIfAbsent(
                     posting.bookId(),
@@ -89,9 +87,9 @@ public class AdvancedSearchService {
             accumulator.add(posting);
         }
 
-        List<SimpleSearchResult> results = new ArrayList<>(byBook.size());
+        List<Candidate> results = new ArrayList<>(byBook.size());
         for (Accumulator accumulator : byBook.values()) {
-            results.add(accumulator.toResult());
+            results.add(accumulator.toCandidate());
         }
         return results;
     }
@@ -120,8 +118,8 @@ public class AdvancedSearchService {
             matchedTerms++;
         }
 
-        private SimpleSearchResult toResult() {
-            return new SimpleSearchResult(
+        private Candidate toCandidate() {
+            return new Candidate(
                     bookId,
                     gutenbergId,
                     title,
