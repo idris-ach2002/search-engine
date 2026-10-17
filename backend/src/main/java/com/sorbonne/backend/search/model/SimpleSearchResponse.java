@@ -10,6 +10,9 @@ public record SimpleSearchResponse(
         long totalElements,
         int totalPages,
         int matchedIndexTerms,
+        boolean pageRankApplied,
+        double lexicalWeight,
+        double pageRankWeight,
         long elapsedMillis,
         List<SimpleSearchResult> content
 ) {

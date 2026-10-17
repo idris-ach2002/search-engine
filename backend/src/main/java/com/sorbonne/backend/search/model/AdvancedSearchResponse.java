@@ -13,6 +13,9 @@ public record AdvancedSearchResponse(
         int nfaStates,
         int dfaStates,
         int minimizedDfaStates,
+        boolean pageRankApplied,
+        double lexicalWeight,
+        double pageRankWeight,
         long elapsedMillis,
         List<SimpleSearchResult> content
 ) {

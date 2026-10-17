@@ -8,6 +8,10 @@ public record SimpleSearchResult(
         String language,
         Integer wordCount,
         long lexicalScore,
-        int matchedTerms
+        int matchedTerms,
+        double normalizedLexicalScore,
+        double pageRankScore,
+        double normalizedPageRankScore,
+        double finalScore
 ) {
 }
