@@ -52,15 +52,15 @@ Le backend couvre actuellement toute la chaîne principale :
 
 | Phase | Fonctionnalité | État |
 |---|---|---|
-| 0 | Infrastructure Spring Boot / PostgreSQL / Flyway / CORS | ✅ |
-| 1 | Réutilisation des algorithmes du projet 1 | ✅ |
-| 2 | Acquisition et stockage Gutenberg | ✅ |
-| 3 | Indexation `terms` / `book_terms` | ✅ |
-| 4 | Recherche simple KMP | ✅ |
-| 5 | Recherche avancée RegEx | ✅ |
-| 6 | Graphe Jaccard | ✅ |
-| 7 | PageRank + ranking final | ✅ |
-| 8 | Suggestions / recommandations | ✅ |
+| 0 | Infrastructure Spring Boot / PostgreSQL / Flyway / CORS | FAIT |
+| 1 | Réutilisation des algorithmes du projet 1 | FAIT |
+| 2 | Acquisition et stockage Gutenberg | FAIT |
+| 3 | Indexation `terms` / `book_terms` | FAIT |
+| 4 | Recherche simple KMP | FAIT |
+| 5 | Recherche avancée RegEx | FAIT |
+| 6 | Graphe Jaccard | FAIT |
+| 7 | PageRank + ranking final | FAIT |
+| 8 | Suggestions / recommandations | FAIT |
 
 ---
 
