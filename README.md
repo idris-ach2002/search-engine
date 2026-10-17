@@ -2,16 +2,16 @@
 
 Moteur de recherche académique sur un corpus de **1 664+ livres Project Gutenberg**, avec index inversé, recherche KMP/RegEx, graphe de similarité Jaccard, PageRank pondéré et recommandations.
 
-## État du backend
+## Fonctionnalité du backend
 
-- ✅ acquisition Gutenberg et stockage local portable ;
-- ✅ indexation `terms` / `book_terms` ;
-- ✅ recherche simple avec KMP ;
-- ✅ recherche avancée RegEx avec `SyntaxTree → NFA → DFA → Hopcroft` ;
-- ✅ graphe de similarité Jaccard ;
-- ✅ PageRank pondéré ;
-- ✅ ranking final lexical + PageRank ;
-- ✅ suggestions depuis les meilleurs résultats et depuis un livre.
+-  acquisition Gutenberg et stockage local portable ;
+-  indexation `terms` / `book_terms` ;
+-  recherche simple avec KMP ;
+-  recherche avancée RegEx avec `SyntaxTree → NFA → DFA → Hopcroft` ;
+-  graphe de similarité Jaccard ;
+-  PageRank pondéré ;
+-  ranking final lexical + PageRank ;
+-  suggestions depuis les meilleurs résultats et depuis un livre.
 
 ## Documentation
 
