@@ -43,3 +43,10 @@ app:
     minimum-shared-terms: ${SIMILARITY_MIN_SHARED_TERMS:2}
     minimum-similarity: ${SIMILARITY_MIN_SCORE:0.05}
     max-neighbors-per-book: ${SIMILARITY_MAX_NEIGHBORS:20}
+
+  ranking:
+    damping-factor: ${PAGERANK_DAMPING_FACTOR:0.85}
+    tolerance: ${PAGERANK_TOLERANCE:1.0E-10}
+    max-iterations: ${PAGERANK_MAX_ITERATIONS:200}
+    lexical-weight: ${RANKING_LEXICAL_WEIGHT:0.85}
+    page-rank-weight: ${RANKING_PAGERANK_WEIGHT:0.15}
