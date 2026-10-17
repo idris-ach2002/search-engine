@@ -33,3 +33,13 @@ app:
       host: ${GUTENBERG_API_HOST:project-gutenberg-books-api.p.rapidapi.com}
       key: ${GUTENBERG_API_KEY:}
       reserved-requests: ${GUTENBERG_API_RESERVED_REQUESTS:50}
+
+  similarity:
+    min-document-frequency: ${SIMILARITY_MIN_DF:2}
+    max-document-frequency-ratio: ${SIMILARITY_MAX_DF_RATIO:0.10}
+    minimum-max-document-frequency: ${SIMILARITY_MIN_MAX_DF:3}
+    max-document-frequency-absolute: ${SIMILARITY_MAX_DF_ABSOLUTE:200}
+    min-term-length: ${SIMILARITY_MIN_TERM_LENGTH:3}
+    minimum-shared-terms: ${SIMILARITY_MIN_SHARED_TERMS:2}
+    minimum-similarity: ${SIMILARITY_MIN_SCORE:0.05}
+    max-neighbors-per-book: ${SIMILARITY_MAX_NEIGHBORS:20}
