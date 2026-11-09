@@ -47,7 +47,6 @@ public class JdbcSearchIndexRepository implements SearchIndexRepository {
                     """
                     SELECT
                         b.id AS book_id,
-                        b.gutenberg_id,
                         b.title,
                         b.author,
                         b.language,
@@ -72,7 +71,6 @@ public class JdbcSearchIndexRepository implements SearchIndexRepository {
 
         return new BookPosting(
                 rs.getLong("book_id"),
-                rs.getInt("gutenberg_id"),
                 rs.getString("title"),
                 rs.getString("author"),
                 rs.getString("language"),

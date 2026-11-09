@@ -48,7 +48,6 @@ public class SuggestionAggregator {
             weights.put(seed.bookId(), weight);
             weightedSeeds.add(new SuggestionResponses.Seed(
                     seed.bookId(),
-                    seed.gutenbergId(),
                     seed.title(),
                     seed.author(),
                     seed.searchRank(),
@@ -87,7 +86,6 @@ public class SuggestionAggregator {
 
     public record SeedInput(
             long bookId,
-            int gutenbergId,
             String title,
             String author,
             int searchRank,
@@ -103,7 +101,6 @@ public class SuggestionAggregator {
 
     private static final class Accumulator {
         private final long bookId;
-        private final int gutenbergId;
         private final String title;
         private final String author;
         private double recommendationScore;
@@ -112,7 +109,6 @@ public class SuggestionAggregator {
 
         private Accumulator(SimilarityGraphRepository.Neighbor neighbor) {
             this.bookId = neighbor.bookId();
-            this.gutenbergId = neighbor.gutenbergId();
             this.title = neighbor.title();
             this.author = neighbor.author();
         }
@@ -135,7 +131,6 @@ public class SuggestionAggregator {
                     .toList();
             return new SuggestionResponses.Suggestion(
                     bookId,
-                    gutenbergId,
                     title,
                     author,
                     recommendationScore,

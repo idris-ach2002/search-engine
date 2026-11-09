@@ -1,17 +1,11 @@
 package com.sorbonne.backend.search.service;
 
-import com.sorbonne.automata.Automaton;
 import com.sorbonne.backend.search.repository.SearchIndexRepository.IndexedTerm;
-import com.sorbonne.regex.DFA;
-import com.sorbonne.regex.DFAM;
-import com.sorbonne.regex.NFA;
-import com.sorbonne.regex.RegexParser;
-import com.sorbonne.regex.SyntaxTree;
-import com.sorbonne.search.NativeSearch;
-import com.sorbonne.search.PreparedSearch;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 @Component
 public class RegexTermMatcher {
@@ -23,55 +17,26 @@ public class RegexTermMatcher {
     }
 
     /**
-     * Compiles the expression with the Project 1 pipeline:
-     * syntax tree -> NFA -> search DFA -> Hopcroft minimization -> native table.
-     * The compiled matcher is then reused for every indexed term in the request.
+     * Compiles the Java regex once per request and tests the indexed vocabulary.
+     * Matcher.find() preserves the former substring-search semantics.
+     * No custom NFA/DFA or exponential subset construction is used.
      */
     public MatchResult match(String regex, List<IndexedTerm> terms) {
         String normalizedRegex = patternNormalizer.normalize(regex);
-
+        final Pattern compiled;
         try {
-            SyntaxTree syntaxTree = RegexParser.parse(normalizedRegex);
-            Automaton nfa = NFA.buildNFA(syntaxTree);
-            Automaton dfa = DFA.forSearch(nfa);
-            Automaton minimizedDfa = DFAM.minimize(dfa);
-            PreparedSearch prepared = NativeSearch.fromSearchDfa(minimizedDfa);
-
-            List<IndexedTerm> matches = terms.stream()
-                    .filter(term -> prepared.search(term.value()))
-                    .toList();
-
-            return new MatchResult(
-                    normalizedRegex,
-                    matches,
-                    nfa.getStates().size(),
-                    dfa.getStates().size(),
-                    minimizedDfa.getStates().size()
-            );
-        } catch (Exception exception) {
-            throw invalidRegex(exception);
+            compiled = Pattern.compile(normalizedRegex, Pattern.CASE_INSENSITIVE);
+        } catch (PatternSyntaxException exception) {
+            throw new IllegalArgumentException("Invalid regex: " + exception.getDescription(), exception);
         }
+
+        List<IndexedTerm> matches = terms.stream()
+                .filter(term -> compiled.matcher(term.value()).find())
+                .toList();
+
+        return new MatchResult(normalizedRegex, matches);
     }
 
-    private static IllegalArgumentException invalidRegex(Exception exception) {
-        if (exception instanceof IllegalArgumentException illegalArgumentException
-                && illegalArgumentException.getMessage() != null
-                && illegalArgumentException.getMessage().startsWith("Regex ")) {
-            return illegalArgumentException;
-        }
-        String message = exception.getMessage();
-        if (message == null || message.isBlank()) {
-            message = exception.getClass().getSimpleName();
-        }
-        return new IllegalArgumentException("Invalid regex: " + message, exception);
-    }
-
-    public record MatchResult(
-            String normalizedRegex,
-            List<IndexedTerm> terms,
-            int nfaStates,
-            int dfaStates,
-            int minimizedDfaStates
-    ) {
+    public record MatchResult(String normalizedRegex, List<IndexedTerm> terms) {
     }
 }

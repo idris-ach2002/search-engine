@@ -16,19 +16,19 @@ class SuggestionAggregatorTest {
     @Test
     void combinesJaccardContributionsFromSeveralTopResults() {
         var seeds = List.of(
-                new SuggestionAggregator.SeedInput(1, 101, "Seed A", "A", 1, 1.0),
-                new SuggestionAggregator.SeedInput(2, 102, "Seed B", "B", 2, 0.5)
+                new SuggestionAggregator.SeedInput(1, "Seed A", "A", 1, 1.0),
+                new SuggestionAggregator.SeedInput(2, "Seed B", "B", 2, 0.5)
         );
         var neighbors = Map.of(
                 1L, List.of(
-                        neighbor(3, 103, "Shared", 0.60),
-                        neighbor(4, 104, "Only A", 0.50),
-                        neighbor(2, 102, "Seed B", 0.95)
+                        neighbor(3, "Shared", 0.60),
+                        neighbor(4, "Only A", 0.50),
+                        neighbor(2, "Seed B", 0.95)
                 ),
                 2L, List.of(
-                        neighbor(3, 103, "Shared", 0.90),
-                        neighbor(5, 105, "Only B", 0.40),
-                        neighbor(1, 101, "Seed A", 0.95)
+                        neighbor(3, "Shared", 0.90),
+                        neighbor(5, "Only B", 0.40),
+                        neighbor(1, "Seed A", 0.95)
                 )
         );
 
@@ -45,8 +45,8 @@ class SuggestionAggregatorTest {
     @Test
     void usesEqualSeedWeightsWhenAllSearchScoresAreZero() {
         var seeds = List.of(
-                new SuggestionAggregator.SeedInput(1, 101, "A", "A", 1, 0.0),
-                new SuggestionAggregator.SeedInput(2, 102, "B", "B", 2, 0.0)
+                new SuggestionAggregator.SeedInput(1, "A", "A", 1, 0.0),
+                new SuggestionAggregator.SeedInput(2, "B", "B", 2, 0.0)
         );
         var result = aggregator.aggregate(seeds, Map.of(), 5);
 
@@ -54,7 +54,7 @@ class SuggestionAggregatorTest {
         assertEquals(0.5, result.seeds().get(1).seedWeight(), 1.0e-12);
     }
 
-    private static SimilarityGraphRepository.Neighbor neighbor(long id, int gutenbergId, String title, double score) {
-        return new SimilarityGraphRepository.Neighbor(id, gutenbergId, title, "Author", score, 10, 20);
+    private static SimilarityGraphRepository.Neighbor neighbor(long id, String title, double score) {
+        return new SimilarityGraphRepository.Neighbor(id, title, "Author", score, 10, 20);
     }
 }

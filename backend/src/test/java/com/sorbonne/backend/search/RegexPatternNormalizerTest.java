@@ -12,7 +12,13 @@ class RegexPatternNormalizerTest {
 
     @Test
     void normalizesCaseAndAccentsWithoutChangingRegexOperators() {
-        assertEquals("caf(e|a).*", normalizer.normalize("CAF(É|A).*") );
+        assertEquals("CAF(E|A).*", normalizer.normalize("CAF(É|A).*") );
+    }
+
+    @Test
+    void preservesJavaRegexEscapesAndCaseSensitiveUnicodePropertyNames() {
+        assertEquals("CAF\\p{Lu}+", normalizer.normalize("CAF\\p{Lu}+"));
+        assertEquals("(?U)[A-Z]+", normalizer.normalize("(?U)[A-Z]+"));
     }
 
     @Test

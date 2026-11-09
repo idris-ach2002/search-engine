@@ -21,9 +21,6 @@ public class Book {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "gutenberg_id", nullable = false, unique = true)
-    private Integer gutenbergId;
-
     @Column(nullable = false, columnDefinition = "text")
     private String title;
 
@@ -38,12 +35,12 @@ public class Book {
 
     /**
      * Portable key relative to the configured storage backend.
-     * Example for local storage: "10084.txt".
+     * Example: "opaque-file-hash.txt"; no metadata is inferred from the name.
      *
      * Never store an absolute filesystem path here: the storage root belongs
      * to application configuration, not to persisted business data.
      */
-    @Column(name = "storage_key", columnDefinition = "text")
+    @Column(name = "storage_key", nullable = false, unique = true, columnDefinition = "text")
     private String storageKey;
 
     @Column(name = "source_url", columnDefinition = "text")
@@ -68,13 +65,13 @@ public class Book {
     protected Book() {
     }
 
-    public Book(Integer gutenbergId, String title, String author, String language, String sourceUrl) {
-        this.gutenbergId = gutenbergId;
+    public Book(String storageKey, String title, String author, String language, String sourceUrl) {
+        this.storageKey = storageKey;
         this.title = title;
         this.author = author;
         this.language = language;
         this.sourceUrl = sourceUrl;
-        this.status = BookStatus.FAILED;
+        this.status = BookStatus.READY;
     }
 
     @PrePersist
@@ -106,24 +103,8 @@ public class Book {
         this.status = BookStatus.READY;
     }
 
-    public void markRejectedTooShort(int wordCount) {
-        this.wordCount = wordCount;
-        this.storageKey = null;
-        this.contentSha256 = null;
-        this.contentBytes = null;
-        this.status = BookStatus.REJECTED_TOO_SHORT;
-    }
-
-    public void markFailed() {
-        this.status = BookStatus.FAILED;
-    }
-
     public Long getId() {
         return id;
-    }
-
-    public Integer getGutenbergId() {
-        return gutenbergId;
     }
 
     public String getTitle() {

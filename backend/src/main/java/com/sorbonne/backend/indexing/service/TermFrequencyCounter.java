@@ -16,9 +16,7 @@ public final class TermFrequencyCounter {
 
     public Map<String, Integer> count(String text) {
         Map<String, Integer> frequencies = new HashMap<>();
-        for (String token : textNormalizer.tokenize(text)) {
-            frequencies.merge(token, 1, Integer::sum);
-        }
+        textNormalizer.forEachToken(text, token -> frequencies.merge(token, 1, Integer::sum));
         return Map.copyOf(frequencies);
     }
 }

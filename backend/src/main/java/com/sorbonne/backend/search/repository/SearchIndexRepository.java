@@ -13,7 +13,6 @@ public interface SearchIndexRepository {
 
     record BookPosting(
             long bookId,
-            int gutenbergId,
             String title,
             String author,
             String language,

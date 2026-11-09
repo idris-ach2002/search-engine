@@ -35,8 +35,16 @@ build/
 # Local secrets
 .env
 
-# Local book dataset (never commit Gutenberg text files)
-data/
+# Local book dataset (downloaded/copyright-sensitive, never committed)
+/data/books/*
+!/data/books/.gitkeep
+/data/catalog.csv
+/data/download_state.json
+/data/gutenberg_catalog.csv.gz
+/data/gutenberg_catalog.csv.gz.tmp
 
 # Local environment / API keys
 .env
+
+# Temporary files for bulk rsync acquisition
+/data/.rsync-staging/

@@ -45,7 +45,7 @@ public class SimilarityGraphService {
         if (!bookRepository.existsById(bookId)) throw new IllegalArgumentException("Unknown book id: " + bookId);
         if (limit < 1 || limit > 100) throw new IllegalArgumentException("limit must be between 1 and 100");
         List<SimilarityResponses.Neighbor> values = repository.findNeighbors(bookId, limit).stream()
-                .map(n -> new SimilarityResponses.Neighbor(n.bookId(), n.gutenbergId(), n.title(), n.author(), n.score(), n.intersectionSize(), n.unionSize())).toList();
+                .map(n -> new SimilarityResponses.Neighbor(n.bookId(), n.title(), n.author(), n.score(), n.intersectionSize(), n.unionSize())).toList();
         return new SimilarityResponses.Neighbors(bookId, values);
     }
 }

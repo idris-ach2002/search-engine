@@ -80,8 +80,10 @@ public class JdbcSimilarityGraphRepository implements SimilarityGraphRepository 
     @Override @Transactional
     public void replaceEdges(List<SimilarityEdge> edges) {
         jdbc.update("DELETE FROM book_similarities");
+        jdbc.update("DELETE FROM book_pageranks");
+        jdbc.update("DELETE FROM pagerank_state");
         if (edges.isEmpty()) return;
-        jdbc.batchUpdate("INSERT INTO book_similarities(book_a_id,book_b_id,jaccard_score,intersection_size,union_size) VALUES (?,?,?,?,?)",
+        jdbc.batchUpdate("INSERT INTO book_similarities(book_a_id,book_b_id,jaccard_score,intersection_size,union_size,created_at) VALUES (?,?,?,?,?,CURRENT_TIMESTAMP)",
                 edges, 500, (ps,e) -> { ps.setLong(1,e.bookAId()); ps.setLong(2,e.bookBId()); ps.setDouble(3,e.score()); ps.setInt(4,e.intersectionSize()); ps.setInt(5,e.unionSize()); });
     }
 
@@ -98,7 +100,6 @@ public class JdbcSimilarityGraphRepository implements SimilarityGraphRepository 
     @Override public List<Neighbor> findNeighbors(long bookId, int limit) {
         String sql = """
             SELECT CASE WHEN s.book_a_id=? THEN bb.id ELSE ba.id END AS neighbor_id,
-                   CASE WHEN s.book_a_id=? THEN bb.gutenberg_id ELSE ba.gutenberg_id END AS gutenberg_id,
                    CASE WHEN s.book_a_id=? THEN bb.title ELSE ba.title END AS title,
                    CASE WHEN s.book_a_id=? THEN bb.author ELSE ba.author END AS author,
                    s.jaccard_score, s.intersection_size, s.union_size
@@ -109,7 +110,7 @@ public class JdbcSimilarityGraphRepository implements SimilarityGraphRepository 
             ORDER BY s.jaccard_score DESC, neighbor_id ASC
             LIMIT ?
             """;
-        return jdbc.query(sql, (rs,n) -> new Neighbor(rs.getLong("neighbor_id"), rs.getInt("gutenberg_id"), rs.getString("title"), rs.getString("author"), rs.getDouble("jaccard_score"), rs.getInt("intersection_size"), rs.getInt("union_size")),
-                bookId,bookId,bookId,bookId,bookId,bookId,limit);
+        return jdbc.query(sql, (rs,n) -> new Neighbor(rs.getLong("neighbor_id"), rs.getString("title"), rs.getString("author"), rs.getDouble("jaccard_score"), rs.getInt("intersection_size"), rs.getInt("union_size")),
+                bookId,bookId,bookId,bookId,bookId,limit);
     }
 }

@@ -8,9 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BookRepository extends JpaRepository<Book, Long> {
 
-    boolean existsByGutenbergId(Integer gutenbergId);
-
-    Optional<Book> findByGutenbergId(Integer gutenbergId);
+    Optional<Book> findByStorageKey(String storageKey);
 
     long countByStatus(BookStatus status);
 

@@ -93,7 +93,6 @@ public class SimpleSearchService {
 
     private static final class Accumulator {
         private final long bookId;
-        private final int gutenbergId;
         private final String title;
         private final String author;
         private final String language;
@@ -103,7 +102,6 @@ public class SimpleSearchService {
 
         private Accumulator(BookPosting posting) {
             this.bookId = posting.bookId();
-            this.gutenbergId = posting.gutenbergId();
             this.title = posting.title();
             this.author = posting.author();
             this.language = posting.language();
@@ -118,7 +116,6 @@ public class SimpleSearchService {
         private Candidate toCandidate() {
             return new Candidate(
                     bookId,
-                    gutenbergId,
                     title,
                     author,
                     language,

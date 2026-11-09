@@ -6,6 +6,7 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -13,7 +14,7 @@ import java.util.regex.Pattern;
  * Produces the canonical search vocabulary used by the inverted index.
  *
  * <p>The output intentionally stays inside the ASCII alphabet so it remains
- * compatible with the Project 1 regex/search core. Apostrophes and hyphens
+ * compatible with the KMP vocabulary and the Java regex matcher. Apostrophes and hyphens
  * are kept only when they occur inside a word.</p>
  */
 @Component
@@ -27,15 +28,20 @@ public final class TextNormalizer {
             return List.of();
         }
 
-        String canonical = canonicalize(text);
-        Matcher matcher = TOKEN.matcher(canonical);
         List<String> tokens = new ArrayList<>();
-
-        while (matcher.find()) {
-            tokens.add(matcher.group());
-        }
-
+        forEachToken(text, tokens::add);
         return List.copyOf(tokens);
+    }
+
+    /** Streams tokens to a consumer without storing the entire token list. */
+    public void forEachToken(String text, Consumer<String> consumer) {
+        if (text == null || text.isBlank()) {
+            return;
+        }
+        Matcher matcher = TOKEN.matcher(canonicalize(text));
+        while (matcher.find()) {
+            consumer.accept(matcher.group());
+        }
     }
 
     String canonicalize(String text) {

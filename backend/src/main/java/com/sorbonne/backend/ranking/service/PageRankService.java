@@ -119,7 +119,6 @@ public class PageRankService {
         var books = repository.topScores(limit).stream()
                 .map(value -> new PageRankResponses.RankedBook(
                         value.bookId(),
-                        value.gutenbergId(),
                         value.title(),
                         value.author(),
                         value.score()

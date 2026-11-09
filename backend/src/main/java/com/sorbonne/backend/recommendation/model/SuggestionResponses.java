@@ -8,7 +8,6 @@ public final class SuggestionResponses {
 
     public record Seed(
             long bookId,
-            int gutenbergId,
             String title,
             String author,
             int searchRank,
@@ -28,7 +27,6 @@ public final class SuggestionResponses {
 
     public record Suggestion(
             long bookId,
-            int gutenbergId,
             String title,
             String author,
             double recommendationScore,
@@ -53,7 +51,6 @@ public final class SuggestionResponses {
 
     public record BookSuggestion(
             long bookId,
-            int gutenbergId,
             String title,
             String author,
             double jaccardScore,
@@ -64,7 +61,6 @@ public final class SuggestionResponses {
 
     public record BookSuggestions(
             long bookId,
-            int gutenbergId,
             String title,
             String author,
             int limit,

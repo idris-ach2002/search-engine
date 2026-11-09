@@ -94,9 +94,9 @@ class SimpleSearchServiceTest {
                 return List.of();
             }
             return List.of(
-                    new BookPosting(10, 10084, "Kazan", "James Oliver Curwood", "en", 69489, 1, 5),
-                    new BookPosting(10, 10084, "Kazan", "James Oliver Curwood", "en", 69489, 2, 2),
-                    new BookPosting(20, 1720, "The Man Who Knew Too Much", "G.K. Chesterton", "en", 62794, 1, 8)
+                    new BookPosting(10, "Kazan", "James Oliver Curwood", "en", 69489, 1, 5),
+                    new BookPosting(10, "Kazan", "James Oliver Curwood", "en", 69489, 2, 2),
+                    new BookPosting(20, "The Man Who Knew Too Much", "G.K. Chesterton", "en", 62794, 1, 8)
             );
         }
     }

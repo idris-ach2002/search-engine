@@ -106,7 +106,6 @@ public class RecommendationService {
         List<SuggestionResponses.BookSuggestion> suggestions = similarityRepository.findNeighbors(bookId, limit).stream()
                 .map(neighbor -> new SuggestionResponses.BookSuggestion(
                         neighbor.bookId(),
-                        neighbor.gutenbergId(),
                         neighbor.title(),
                         neighbor.author(),
                         neighbor.score(),
@@ -117,7 +116,6 @@ public class RecommendationService {
 
         return new SuggestionResponses.BookSuggestions(
                 bookId,
-                book.getGutenbergId(),
                 book.getTitle(),
                 book.getAuthor(),
                 limit,
@@ -131,7 +129,6 @@ public class RecommendationService {
             SimpleSearchResult result = rankedSeeds.get(index);
             seeds.add(new SuggestionAggregator.SeedInput(
                     result.bookId(),
-                    result.gutenbergId(),
                     result.title(),
                     result.author(),
                     index + 1,

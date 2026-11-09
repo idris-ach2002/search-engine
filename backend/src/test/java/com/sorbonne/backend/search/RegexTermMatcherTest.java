@@ -9,14 +9,13 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RegexTermMatcherTest {
 
     private final RegexTermMatcher matcher = new RegexTermMatcher(new RegexPatternNormalizer());
 
     @Test
-    void compilesProjectOnePipelineAndMatchesDictionarySubstrings() {
+    void compilesJavaPatternAndMatchesDictionarySubstrings() {
         List<IndexedTerm> terms = List.of(
                 new IndexedTerm(1, "cat"),
                 new IndexedTerm(2, "cot"),
@@ -32,10 +31,6 @@ class RegexTermMatcherTest {
                 List.of("cat", "cot", "scatter"),
                 result.terms().stream().map(IndexedTerm::value).toList()
         );
-        assertTrue(result.nfaStates() > 0);
-        assertTrue(result.dfaStates() > 0);
-        assertTrue(result.minimizedDfaStates() > 0);
-        assertTrue(result.minimizedDfaStates() <= result.dfaStates());
     }
 
     @Test
@@ -48,7 +43,7 @@ class RegexTermMatcherTest {
 
         RegexTermMatcher.MatchResult result = matcher.match("CAFÉ.*", terms);
 
-        assertEquals("cafe.*", result.normalizedRegex());
+        assertEquals("CAFE.*", result.normalizedRegex());
         assertEquals(
                 List.of("cafe", "cafeteria"),
                 result.terms().stream().map(IndexedTerm::value).toList()
@@ -56,8 +51,27 @@ class RegexTermMatcherTest {
     }
 
     @Test
-    void rejectsUnsupportedOrMalformedExpressions() {
-        assertThrows(IllegalArgumentException.class, () -> matcher.match("cat+", List.of()));
+    void supportsStandardJavaRegexFeatures() {
+        List<IndexedTerm> terms = List.of(
+                new IndexedTerm(1, "cat"),
+                new IndexedTerm(2, "catt"),
+                new IndexedTerm(3, "catalogue"),
+                new IndexedTerm(4, "dog")
+        );
+        assertEquals(List.of("cat", "catt"), matcher.match("^cat+$", terms)
+                .terms().stream().map(IndexedTerm::value).toList());
+        assertEquals(List.of("cat", "catt", "catalogue"), matcher.match("^cat[a-z]*", terms)
+                .terms().stream().map(IndexedTerm::value).toList());
+    }
+
+    @Test
+    void preservesEscapesAndRejectsInvalidExpressions() {
+        List<IndexedTerm> terms = List.of(new IndexedTerm(1, "cat"), new IndexedTerm(2, "catalogue"));
+        assertEquals(List.of("cat"), matcher.match("\\bcat\\b", terms)
+                .terms().stream().map(IndexedTerm::value).toList());
+        assertEquals(List.of("cat", "catalogue"), matcher.match("CAT\\p{Ll}*", terms)
+                .terms().stream().map(IndexedTerm::value).toList());
         assertThrows(IllegalArgumentException.class, () -> matcher.match("(cat", List.of()));
+        assertThrows(IllegalArgumentException.class, () -> matcher.match("[a-", List.of()));
     }
 }

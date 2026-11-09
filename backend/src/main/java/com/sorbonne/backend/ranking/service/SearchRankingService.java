@@ -68,7 +68,6 @@ public class SearchRankingService {
 
             results.add(new SimpleSearchResult(
                     candidate.bookId(),
-                    candidate.gutenbergId(),
                     candidate.title(),
                     candidate.author(),
                     candidate.language(),
@@ -88,7 +87,6 @@ public class SearchRankingService {
 
     public record Candidate(
             long bookId,
-            int gutenbergId,
             String title,
             String author,
             String language,

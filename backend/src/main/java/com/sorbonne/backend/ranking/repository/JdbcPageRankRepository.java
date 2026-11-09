@@ -149,7 +149,7 @@ public class JdbcPageRankRepository implements PageRankRepository, SearchRankRep
     public List<RankedBook> topScores(int limit) {
         return jdbc.query(
                 """
-                SELECT b.id, b.gutenberg_id, b.title, b.author, pr.score
+                SELECT b.id, b.title, b.author, pr.score
                 FROM book_pageranks pr
                 JOIN books b ON b.id = pr.book_id
                 WHERE b.status='READY'
@@ -158,7 +158,6 @@ public class JdbcPageRankRepository implements PageRankRepository, SearchRankRep
                 """,
                 (rs, rowNum) -> new RankedBook(
                         rs.getLong("id"),
-                        rs.getInt("gutenberg_id"),
                         rs.getString("title"),
                         rs.getString("author"),
                         rs.getDouble("score")

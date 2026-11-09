@@ -41,7 +41,6 @@ public final class PageRankResponses {
 
     public record RankedBook(
             long bookId,
-            int gutenbergId,
             String title,
             String author,
             double pageRankScore

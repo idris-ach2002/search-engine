@@ -66,9 +66,6 @@ public class AdvancedSearchService {
                 totalElements,
                 totalPages,
                 termMatches.terms().size(),
-                termMatches.nfaStates(),
-                termMatches.dfaStates(),
-                termMatches.minimizedDfaStates(),
                 ranking.pageRankApplied(),
                 ranking.lexicalWeight(),
                 ranking.pageRankWeight(),
@@ -96,7 +93,6 @@ public class AdvancedSearchService {
 
     private static final class Accumulator {
         private final long bookId;
-        private final int gutenbergId;
         private final String title;
         private final String author;
         private final String language;
@@ -106,7 +102,6 @@ public class AdvancedSearchService {
 
         private Accumulator(BookPosting posting) {
             this.bookId = posting.bookId();
-            this.gutenbergId = posting.gutenbergId();
             this.title = posting.title();
             this.author = posting.author();
             this.language = posting.language();
@@ -121,7 +116,6 @@ public class AdvancedSearchService {
         private Candidate toCandidate() {
             return new Candidate(
                     bookId,
-                    gutenbergId,
                     title,
                     author,
                     language,

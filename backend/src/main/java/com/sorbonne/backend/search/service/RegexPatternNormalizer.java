@@ -3,7 +3,6 @@ package com.sorbonne.backend.search.service;
 import org.springframework.stereotype.Component;
 
 import java.text.Normalizer;
-import java.util.Locale;
 
 @Component
 public class RegexPatternNormalizer {
@@ -11,8 +10,8 @@ public class RegexPatternNormalizer {
     private static final int MAX_PATTERN_LENGTH = 256;
 
     /**
-     * Applies the same case/accent policy as the textual index without changing
-     * regular-expression operators such as '.', '*', '|', '(' or ')'.
+     * Removes accents while keeping Java regex syntax and letter case intact.
+     * The compiled Pattern is configured to match without case sensitivity.
      */
     public String normalize(String regex) {
         if (regex == null || regex.isBlank()) {
@@ -35,7 +34,9 @@ public class RegexPatternNormalizer {
             result.append(character);
         }
 
-        String normalized = result.toString().toLowerCase(Locale.ROOT);
+        // Preserve the spelling of Java regex operators, flags, character
+        // classes and Unicode properties. Matching ignores case via Pattern.
+        String normalized = result.toString();
         if (normalized.isBlank()) {
             throw new IllegalArgumentException("Regex must contain a searchable pattern");
         }

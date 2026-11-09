@@ -52,7 +52,7 @@ class SearchRankingServiceTest {
 
     private static SearchRankingService.Candidate candidate(long id, long lexicalScore) {
         return new SearchRankingService.Candidate(
-                id, (int) id, "Book " + id, "Author", "en", 10000, lexicalScore, 1
+                id, "Book " + id, "Author", "en", 10000, lexicalScore, 1
         );
     }
 

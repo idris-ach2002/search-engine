@@ -31,7 +31,6 @@ public interface PageRankRepository {
 
     record RankedBook(
             long bookId,
-            int gutenbergId,
             String title,
             String author,
             double score

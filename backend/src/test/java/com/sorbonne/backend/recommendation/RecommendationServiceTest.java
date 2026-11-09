@@ -28,12 +28,12 @@ class RecommendationServiceTest {
         SuggestionProperties properties = new SuggestionProperties(3, 10, 20, 5, 50);
         RecommendationService service = new RecommendationService(simple, advanced, similarity, books, properties, new SuggestionAggregator());
 
-        SimpleSearchResult seed = new SimpleSearchResult(10, 1720, "Seed", "Author", "en", 10000, 100, 3, 1.0, 0.2, 1.0, 1.0);
+        SimpleSearchResult seed = new SimpleSearchResult(10, "Seed", "Author", "en", 10000, 100, 3, 1.0, 0.2, 1.0, 1.0);
         when(simple.search("man", 0, 3)).thenReturn(new SimpleSearchResponse(
                 "man", "man", 0, 3, 1, 1, 2, true, 0.85, 0.15, 1, List.of(seed)
         ));
         when(similarity.findNeighbors(eq(10L), anyInt())).thenReturn(List.of(
-                new SimilarityGraphRepository.Neighbor(20, 2020, "Neighbor", "Other", 0.4, 20, 50)
+                new SimilarityGraphRepository.Neighbor(20, "Neighbor", "Other", 0.4, 20, 50)
         ));
 
         var response = service.simpleSearchSuggestions("man", null, null);

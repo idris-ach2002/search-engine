@@ -19,5 +19,5 @@ public interface SimilarityGraphRepository {
 
     record PairIntersection(long bookAId, long bookBId, int intersectionSize) {}
     record SimilarityEdge(long bookAId, long bookBId, double score, int intersectionSize, int unionSize) {}
-    record Neighbor(long bookId, int gutenbergId, String title, String author, double score, int intersectionSize, int unionSize) {}
+    record Neighbor(long bookId, String title, String author, double score, int intersectionSize, int unionSize) {}
 }

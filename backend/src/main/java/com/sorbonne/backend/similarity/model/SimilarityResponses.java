@@ -14,7 +14,7 @@ public final class SimilarityResponses {
                          int minDocumentFrequency, double maxDocumentFrequencyRatio,
                          double minimumSimilarity, int maxNeighborsPerBook) {}
 
-    public record Neighbor(long bookId, int gutenbergId, String title, String author,
+    public record Neighbor(long bookId, String title, String author,
                            double jaccardScore, int intersectionSize, int unionSize) {}
 
     public record Neighbors(long bookId, List<Neighbor> neighbors) {}
