@@ -111,3 +111,5 @@ Desktop.ini
 *.swp
 *.swo
 *~
+
+.venv/
