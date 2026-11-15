@@ -1,0 +1,7 @@
+target/
+data/books/
+data/*.gz
+data/download_state.json
+*.iml
+.idea/
+.git/

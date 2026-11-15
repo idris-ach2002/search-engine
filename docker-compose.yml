@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: daar-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-idrisdatabase}
+      POSTGRES_USER: ${DB_USER:-ai222829}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-devpassword}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ai222829} -d ${DB_NAME:-idrisdatabase}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: daar-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-idrisdatabase}
+      DB_USER: ${DB_USER:-ai222829}
+      DB_PASSWORD: ${DB_PASSWORD:-devpassword}
+      BOOK_STORAGE_ROOT: /app/data/books
+      BOOK_CATALOG: /app/data/catalog.csv
+      BOOK_MIN_WORDS: "10000"
+      SPRING_FLYWAY_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend/data:/app/data
+
+volumes:
+  postgres_data:
