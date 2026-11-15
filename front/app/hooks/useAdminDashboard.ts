@@ -2,16 +2,15 @@ import { useCallback, useState } from "react";
 import { api } from "../api";
 import { getErrorMessage } from "../lib/format";
 import type {
+  AdminAction,
   AdminErrors,
   ImportStatus,
   IndexStatus,
   PageRankStatus,
   RankedBook,
-  RebuildAction,
   SimilarityStatus,
 } from "../types/admin";
 
-/** Manages monitoring snapshots, independent endpoint errors, and rebuilds. */
 export function useAdminDashboard() {
   const [indexStatus, setIndexStatus] = useState<IndexStatus | null>(null);
   const [similarityStatus, setSimilarityStatus] = useState<SimilarityStatus | null>(null);
@@ -20,7 +19,7 @@ export function useAdminDashboard() {
   const [topBooks, setTopBooks] = useState<RankedBook[]>([]);
   const [errors, setErrors] = useState<AdminErrors>({});
   const [loading, setLoading] = useState(false);
-  const [action, setAction] = useState<RebuildAction | null>(null);
+  const [action, setAction] = useState<AdminAction | null>(null);
   const [actionError, setActionError] = useState("");
 
   const refresh = useCallback(async () => {
@@ -50,7 +49,33 @@ export function useAdminDashboard() {
     setLoading(false);
   }, []);
 
-  const rebuild = async (target: RebuildAction) => {
+  const syncCatalog = async () => {
+    setAction("sync");
+    setActionError("");
+    try {
+      await api.syncCatalog();
+      await refresh();
+    } catch (error) {
+      setActionError(getErrorMessage(error));
+    } finally {
+      setAction(null);
+    }
+  };
+
+  const startIndexing = async () => {
+    setAction("indexing");
+    setActionError("");
+    try {
+      await api.startIndexing();
+      await refresh();
+    } catch (error) {
+      setActionError(getErrorMessage(error));
+    } finally {
+      setAction(null);
+    }
+  };
+
+  const rebuild = async (target: "similarity" | "pagerank") => {
     setAction(target);
     setActionError("");
     try {
@@ -75,6 +100,8 @@ export function useAdminDashboard() {
     action,
     actionError,
     refresh,
+    syncCatalog,
+    startIndexing,
     rebuild,
   };
 }

@@ -8,10 +8,11 @@ interface IndexStatusCardProps {
   status: IndexStatus | null;
   error?: string;
   loading: boolean;
+  indexing: boolean;
+  onIndex: () => void;
 }
 
-/** Displays corpus coverage and vocabulary size for the inverted index. */
-export function IndexStatusCard({ status, error, loading }: IndexStatusCardProps) {
+export function IndexStatusCard({ status, error, loading, indexing, onIndex }: IndexStatusCardProps) {
   const upToDate = status != null && status.unindexedBooks === 0;
 
   return (
@@ -44,6 +45,14 @@ export function IndexStatusCard({ status, error, loading }: IndexStatusCardProps
           {loading ? "Chargement…" : "Données indisponibles"}
         </div>
       )}
+      <button
+        className="card-action"
+        onClick={onIndex}
+        disabled={indexing || loading || upToDate}
+      >
+        <Icon name="refresh" size={15} />
+        {indexing ? "Indexation en cours…" : "Lancer l'indexation"}
+      </button>
     </article>
   );
 }

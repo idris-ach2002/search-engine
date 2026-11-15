@@ -35,10 +35,6 @@ function isApiErrorPayload(value: unknown): value is ApiErrorPayload {
   );
 }
 
-/**
- * Centralizes HTTP behavior so endpoint functions stay focused on contracts
- * and URL construction.
- */
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
@@ -80,7 +76,6 @@ function queryString(params: Record<string, string | number>): string {
   return searchParams.toString();
 }
 
-/** Typed client for the documented Spring Boot endpoints. */
 export const api = {
   health(): Promise<unknown> {
     return request<unknown>("/api/health");
@@ -130,7 +125,15 @@ export const api = {
   },
 
   importStatus(): Promise<ImportStatus> {
-    return request<ImportStatus>("/api/admin/gutenberg/import/status");
+    return request<ImportStatus>("/api/admin/catalog/status");
+  },
+
+  syncCatalog(): Promise<unknown> {
+    return request<unknown>("/api/admin/catalog/sync?prune=true", { method: "POST" });
+  },
+
+  startIndexing(): Promise<unknown> {
+    return request<unknown>("/api/admin/indexing/all?maxBooks=2000", { method: "POST" });
   },
 
   rebuildSimilarity(): Promise<unknown> {

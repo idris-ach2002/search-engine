@@ -1,4 +1,3 @@
-/** Operational status of the inverted index. */
 export interface IndexStatus {
   readyBooks: number;
   indexedBooks: number;
@@ -7,7 +6,6 @@ export interface IndexStatus {
   bookTerms: number;
 }
 
-/** Operational status of the Jaccard similarity graph. */
 export interface SimilarityStatus {
   readyBooks: number;
   indexedBooks: number;
@@ -17,7 +15,6 @@ export interface SimilarityStatus {
   maxNeighborsPerBook: number;
 }
 
-/** Operational status of the PageRank calculation. */
 export interface PageRankStatus {
   readyBooks: number;
   similarityEdges: number;
@@ -31,7 +28,6 @@ export interface PageRankStatus {
   pageRankWeight: number;
 }
 
-/** Progress snapshot returned by the Gutenberg import service. */
 export interface ImportStatus {
   readyBooks: number;
   rejectedTooShort: number;
@@ -40,7 +36,6 @@ export interface ImportStatus {
   minimumWordCount: number;
 }
 
-/** One entry in the global PageRank leaderboard. */
 export interface RankedBook {
   bookId: number;
   gutenbergId: number;
@@ -56,3 +51,4 @@ export interface PageRankTop {
 export type AdminSection = "indexing" | "similarity" | "pagerank" | "import" | "top";
 export type AdminErrors = Partial<Record<AdminSection, string>>;
 export type RebuildAction = "similarity" | "pagerank";
+export type AdminAction = "sync" | "indexing" | "similarity" | "pagerank";

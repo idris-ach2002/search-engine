@@ -7,10 +7,11 @@ interface CorpusStatusCardProps {
   status: ImportStatus | null;
   error?: string;
   loading: boolean;
+  syncing: boolean;
+  onSync: () => void;
 }
 
-/** Gutenberg import totals and progress against the documented target corpus. */
-export function CorpusStatusCard({ status, error, loading }: CorpusStatusCardProps) {
+export function CorpusStatusCard({ status, error, loading, syncing, onSync }: CorpusStatusCardProps) {
   const targetBooks = 1664;
   const progress = status ? Math.min(status.readyBooks / targetBooks, 1) : 0;
 
@@ -45,6 +46,14 @@ export function CorpusStatusCard({ status, error, loading }: CorpusStatusCardPro
           {loading ? "Chargement…" : "Données indisponibles"}
         </div>
       )}
+      <button
+        className="card-action"
+        onClick={onSync}
+        disabled={syncing || loading}
+      >
+        <Icon name="refresh" size={15} />
+        {syncing ? "Synchronisation…" : "Synchroniser le catalogue"}
+      </button>
     </article>
   );
 }

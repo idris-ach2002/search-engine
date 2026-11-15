@@ -12,7 +12,6 @@ interface MonitoringDashboardProps {
   onOpenBook: (bookId: number) => void;
 }
 
-/** Monitoring view composition for import, index, graph, and ranking status. */
 export function MonitoringDashboard({ onOpenBook }: MonitoringDashboardProps) {
   const dashboard = useAdminDashboard();
 
@@ -54,11 +53,15 @@ export function MonitoringDashboard({ onOpenBook }: MonitoringDashboardProps) {
             status={dashboard.importStatus}
             error={dashboard.errors.import}
             loading={dashboard.loading}
+            syncing={dashboard.action === "sync"}
+            onSync={() => void dashboard.syncCatalog()}
           />
           <IndexStatusCard
             status={dashboard.indexStatus}
             error={dashboard.errors.indexing}
             loading={dashboard.loading}
+            indexing={dashboard.action === "indexing"}
+            onIndex={() => void dashboard.startIndexing()}
           />
         </div>
       </section>
