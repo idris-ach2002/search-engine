@@ -1,0 +1,11 @@
+methode,requete,temps_ms
+KMP,man,70
+KMP,adventure,60
+KMP,love,54
+KMP,time,54
+KMP,night,78
+REGEX,m(an|en),81
+REGEX,l[a-z]+e,85
+REGEX,t[a-z]+e,121
+REGEX,n[a-z]+t,95
+REGEX,a[a-z]+d,105
