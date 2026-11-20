@@ -19,7 +19,7 @@ scripts/
   verify_local_corpus.py     # contrôle intégral du corpus, sans réseau
 ```
 
-Le CSV contient `storage_key,title,author,language,source_url` mais sa création manuelle n'est **plus nécessaire**. `POST /api/admin/catalog/generate` le crée sans modifier PostgreSQL ; `POST /api/admin/catalog/sync` le génère puis importe les livres. Métadonnées : CSV existant → en-têtes `Title:/Author:/Language:` → nom lisible du TXT. Un nom SHA-256 sans métadonnées ne permet pas de connaître le vrai titre ; l'application affiche alors `Titre inconnu [clé]`. Le contenu indexé reste celui du TXT.
+Le CSV contient `storage_key,title,author,language,source_url` mais sa création manuelle n'est **plus nécessaire**. `POST /api/admin/catalog/generate` le crée sans modifier PostgreSQL ; `POST /api/admin/catalog/sync` le génère puis importe les livres. Métadonnées : valeurs existantes du CSV → en-têtes explicites → page de titre (`by`, `par`, etc.) → nom lisible du TXT. Les champs vides et les titres de secours sont enrichis à chaque génération ; les autres valeurs sont conservées. La langue peut être estimée localement à partir du texte. Une URL source est extraite uniquement depuis un champ explicite ou une référence Gutenberg identifiable ; les informations absentes ou ambiguës restent vides. Un nom SHA-256 sans métadonnées ne permet pas de connaître le vrai titre ; l'application affiche alors `Titre inconnu [clé]`. Le contenu indexé reste celui du TXT.
 
 ## Démarrage (depuis la racine du dépôt)
 

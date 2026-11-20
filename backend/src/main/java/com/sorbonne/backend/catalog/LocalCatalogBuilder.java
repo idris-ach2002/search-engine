@@ -37,16 +37,32 @@ public final class LocalCatalogBuilder {
         List<CatalogCsvReader.Entry> updated = new ArrayList<>(storageKeys.size());
         for (String key : storageKeys) {
             CatalogCsvReader.Entry known = previous.get(key);
-            if (known != null) {
+            if (known != null && !needsEnrichment(known)) {
                 updated.add(known);
                 reused++;
             } else {
-                updated.add(metadata.infer(key, files.resolve(key)));
-                inferred++;
+                CatalogCsvReader.Entry extracted = metadata.infer(key, files.resolve(key));
+                CatalogCsvReader.Entry merged = known == null ? extracted : merge(known, extracted);
+                updated.add(merged);
+                if (merged.equals(known)) reused++;
+                else inferred++;
             }
         }
         boolean changed = csv.writeIfChanged(updated);
         return new GenerationResult(updated.size(), reused, inferred, changed);
+    }
+
+    private static boolean needsEnrichment(CatalogCsvReader.Entry entry) {
+        return entry.title().equals(LocalBookMetadataExtractor.filenameLabel(entry.storageKey()))
+                || entry.author() == null || entry.language() == null || entry.sourceUrl() == null;
+    }
+
+    private static CatalogCsvReader.Entry merge(CatalogCsvReader.Entry known, CatalogCsvReader.Entry extracted) {
+        boolean fallbackTitle = known.title().equals(LocalBookMetadataExtractor.filenameLabel(known.storageKey()));
+        return new CatalogCsvReader.Entry(known.storageKey(), fallbackTitle ? extracted.title() : known.title(),
+                known.author() == null ? extracted.author() : known.author(),
+                known.language() == null ? extracted.language() : known.language(),
+                known.sourceUrl() == null ? extracted.sourceUrl() : known.sourceUrl());
     }
 
     public record GenerationResult(int localBooks, int preservedMetadata, int inferredMetadata,

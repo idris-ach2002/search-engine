@@ -158,9 +158,15 @@ Le dossier `backend/data/books/` est la seule entrée obligatoire : déposer des
 
 Ordre des métadonnées :
 
-1. Métadonnées existantes dans `catalog.csv` pour une même clé (prioritaires, même si les noms sont des SHA-256).
-2. Champs explicites `Title:`, `Author:`, `Language:` dans les premiers 32 Kio du texte.
-3. Nom du fichier (exemple `Mon_roman.txt` → `Mon roman`) comme libellé de repli. Pour une clé hexadécimale opaque, le titre **réel est inconnu** et l'étiquette affichée est `Titre inconnu [12 premiers caractères]` ; aucun titre n'est inventé.
+1. Valeurs déjà renseignées dans `catalog.csv` pour une même clé. Les champs vides sont complétés et un titre égal au libellé de secours du fichier peut être remplacé. Les autres valeurs restent prioritaires, même si elles diffèrent du texte.
+2. Champs explicites `Title:/Titre:`, `Author:/Auteur:`, `Language:/Langue:`, `Source:/Source_URL:/URL:`. Les en-têtes UTF-8 avec BOM, CRLF et titres avec continuation indentée sont pris en charge. Les noms de langues et codes ISO sont normalisés.
+3. En-tête Gutenberg ou page de titre : titre isolé ou sur plusieurs lignes, auteur précédé de `by`, `par`, `von`, `por`, `di` ou `av`. L'extraction écarte les crédits de production, notes de transcription et titres/auteurs cités après le début des chapitres. Elle reste heuristique : les mises en page inhabituelles peuvent rester sans métadonnées ou demander une correction manuelle du CSV.
+4. Sans langue explicite, détection locale à partir des écritures Unicode et des mots fréquents. Le détecteur laisse le champ vide si le texte est trop court, ambigu ou non pris en charge ; il ne suppose pas que tous les livres sont en anglais.
+5. Nom du fichier (exemple `Mon_roman.txt` → `Mon roman`) comme libellé de repli. Pour une clé hexadécimale opaque, l'étiquette est `Titre inconnu [12 premiers caractères]`.
+
+L'extracteur lit au maximum 64 Kio par fichier, avec une limite de 16 384 caractères pour les métadonnées et la page de titre. `source_url` provient d'une URL HTTP(S) explicitement indiquée ou d'une référence Gutenberg dans l'en-tête (par exemple `[EBook #36]` → `https://www.gutenberg.org/ebooks/36`). Les liens vers les équipes de transcription ne sont pas des sources du livre. Aucun appel réseau n'est effectué. Un nom tel que `book_0002.txt` ne permet pas de retrouver l'identifiant Gutenberg ; les informations supprimées au téléchargement ne peuvent pas toutes être reconstituées.
+
+Pour enrichir un ancien catalogue, redémarrer le backend puis appeler `POST /api/admin/catalog/sync` (ou `/generate` pour modifier uniquement le CSV). Une simple réindexation ne remplit pas les métadonnées. Les compteurs `inferredMetadata` et `preservedMetadata` comptent respectivement les lignes créées/enrichies et les lignes inchangées. Une seconde génération sans nouvelles informations ne réécrit pas le fichier.
 
 Un catalogue dont les métadonnées sont précieuses peut donc être fourni avec les livres ; ce n'est pas obligatoire pour que le moteur fonctionne. Le CSV n'est pas nécessaire pour l'indexation des mots du texte ; il donne les métadonnées affichées dans les résultats.
 

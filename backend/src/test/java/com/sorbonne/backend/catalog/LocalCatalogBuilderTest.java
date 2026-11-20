@@ -48,6 +48,52 @@ class LocalCatalogBuilderTest {
     }
 
     @Test
+    void enrichesExistingFallbackRowsAndPreservesExplicitValues() throws Exception {
+        Path books = Files.createDirectories(temporary.resolve("books"));
+        Path csv = temporary.resolve("catalog.csv");
+        Files.writeString(books.resolve("book_0002.txt"),
+                "Title: The War of the Worlds\nAuthor: H. G. Wells\nLanguage: English\n"
+                        + "Source: https://www.gutenberg.org/ebooks/36\n");
+        Files.writeString(books.resolve("custom.txt"),
+                "Title: Inferred title\nAuthor: Inferred author\nLanguage: English\n"
+                        + "Source: https://example.org/inferred\n");
+        var reader = new CatalogCsvReader(csv.toString());
+        reader.writeIfChanged(java.util.List.of(
+                new CatalogCsvReader.Entry("book_0002.txt", "book 0002", null, null, null),
+                new CatalogCsvReader.Entry("custom.txt", "Titre vérifié", "Auteur vérifié", "fr", null)));
+        var generator = builder(books, csv);
+        var result = generator.generate();
+        assertEquals(2, result.inferredMetadata());
+        assertTrue(result.catalogUpdated());
+        var entries = reader.read();
+        assertEquals(new CatalogCsvReader.Entry("book_0002.txt", "The War of the Worlds", "H. G. Wells",
+                "en", "https://www.gutenberg.org/ebooks/36"), entries.getFirst());
+        assertEquals(new CatalogCsvReader.Entry("custom.txt", "Titre vérifié", "Auteur vérifié", "fr",
+                "https://example.org/inferred"), entries.get(1));
+        var second = generator.generate();
+        assertEquals(2, second.preservedMetadata());
+        assertFalse(second.catalogUpdated());
+    }
+
+    @Test
+    void enrichesOpaqueFallbackAndKeepsExistingSourceWhenOtherFieldsAreMissing() throws Exception {
+        Path books = Files.createDirectories(temporary.resolve("books"));
+        Path csv = temporary.resolve("catalog.csv");
+        String key = "ab".repeat(32) + ".txt";
+        Files.writeString(books.resolve(key), "A Real Title\n\nby Jane Doe\n\nCHAPTER I\n\n");
+        var reader = new CatalogCsvReader(csv.toString());
+        reader.writeIfChanged(java.util.List.of(new CatalogCsvReader.Entry(key,
+                "Titre inconnu [abababababab]", null, null, "https://example.org/verified")));
+        var generator = builder(books, csv);
+        generator.generate();
+        var entry = reader.read().getFirst();
+        assertEquals("A Real Title", entry.title());
+        assertEquals("Jane Doe", entry.author());
+        assertEquals("https://example.org/verified", entry.sourceUrl());
+        assertFalse(generator.generate().catalogUpdated());
+    }
+
+    @Test
     void missingOrOpaqueMetadataIsNotInvented() throws Exception {
         Path books = Files.createDirectories(temporary.resolve("books"));
         Path csv = temporary.resolve("catalog.csv");
