@@ -2,21 +2,21 @@
 
 ## 1. Objectif et périmètre
 
-Le serveur fournit la recherche simple et avancée sur des livres en texte intégral stockés **localement**. Il ne contacte **aucune API externe** et n'utilise aucun service d'importation dans Spring Boot. Les fichiers et métadonnées sont déposés sous `backend/data/`, soit manuellement, soit via le script **externe** `scripts/download_sample_books.py` (script Python standard, sans RapidAPI).
+Le serveur fournit la recherche simple et avancée sur des livres en texte intégral stockés **localement**. Il ne contacte **aucune API externe** et n'utilise aucun service d'importation dans Spring Boot. Les fichiers sont déposés sous `backend/data/books/` par le script **externe** `scripts/fast_dl.py`, exécuté dans un environnement virtuel Python avec la dépendance `datasets`. Spring Boot génère/enrichit ensuite `catalog.csv` lors de la synchronisation. Le dépôt se lance avec **Docker Compose pour PostgreSQL et le backend**, et **npm en local pour le frontend**.
 
-La bibliothèque de développement peut contenir **au moins 600 livres** de plus de **10 000 mots** chacun. L'énoncé académique vise un minimum final de **1 664 livres** ; 600 ne suffisent donc pas à satisfaire ce critère final.
+Le script courant vise **1 664 livres** d'au moins **10 000 mots** chacun. Ce nombre est une cible de téléchargement : vérifier le résultat avec `verify_local_corpus.py --target 1664` après génération du catalogue.
 
 Fonctions du serveur : catalogue local → contrôle des fichiers → indexation inversée → KMP/RegEx → ranking lexical/PageRank → graphe Jaccard → suggestions.
 
 ## 2. Architecture des fichiers
 
 ```text
-search-engine-main/
+search-engine/
 ├── backend/
 │   ├── data/
 │   │   ├── catalog.csv             (généré localement, exclu de Git)
 │   │   └── books/
-│   │       ├── <sha256>.txt        (exemples produits par le script)
+│   │       ├── book_0001.txt       (produit par fast_dl.py)
 │   │       └── mon-livre.txt       (autorisé aussi)
 │   ├── src/main/java/com/sorbonne/backend/
 │   │   ├── book/                  entité et routes de consultation
@@ -27,12 +27,14 @@ search-engine-main/
 │   │   ├── ranking/               PageRank pondéré, ranking hybride
 │   │   ├── recommendation/        suggestions multi-graines
 │   │   └── health/
-│   └── src/main/resources/db/migration/V1..V5
+│   └── src/main/resources/db/migration/V1..V6
 ├── scripts/
-│   ├── download_sample_books.py   approvisionnement EXTERNE (Python)
+│   ├── fast_dl.py                 téléchargement courant (Python + datasets)
+│   ├── download_sample_books.py   téléchargeur alternatif
 │   ├── verify_local_corpus.py     vérification locale (Python)
 │   └── test_download_sample_books.py
-└── front/                         application React
+├── docker-compose.yml            PostgreSQL + backend
+└── front/                         application React lancée avec npm
 ```
 
 Les imports `com.sorbonne.backend.gutenberg` et tous les anciens contrôleurs correspondants ont été supprimés. `LocalBookFiles` est réutilisé par la synchronisation et l'indexeur ; les noms de fichiers restent des clés de stockage. Seul le générateur de catalogue peut utiliser un nom lisible comme libellé de secours lorsque les métadonnées sont absentes.
@@ -54,7 +56,7 @@ collection/x8a7.txt,"Another book",Example Writer,en,https://example.org/origina
 - Chaque chemin doit pointer vers un fichier UTF-8 régulier sous `data/books`.
 - Les fichiers sont contrôlés au moyen de leur taille, de l'encodage, d'un SHA-256 et du nombre de mots réels ; une entrée trop courte est refusée.
 - Les liens symboliques échappant au répertoire, chemins absolus et `../` sont refusés.
-- Le script Python utilise des noms SHA-256 opaques, mais vous pouvez choisir **n'importe quel autre nom** `.txt` valide : il est détecté automatiquement, sans inscription manuelle dans le CSV.
+- `fast_dl.py` utilise des noms séquentiels `book_0001.txt`, `book_0002.txt`, etc., mais vous pouvez choisir **n'importe quel autre nom** `.txt` valide : il est détecté automatiquement, sans inscription manuelle dans le CSV.
 - Deux titres identiques sont possibles si les fichiers (leurs `storage_key`) sont différents. La clé unique du livre est le `storage_key`, tandis que l'API expose `bookId` (identifiant PostgreSQL).
 
 La synchronisation ne renomme ni ne déplace les fichiers : elle ne fait que **référencer** les chemins, vérifier le contenu et mettre à jour la table `books`.
@@ -68,50 +70,48 @@ cp ~/Documents/mon_roman.txt backend/data/books/roman_01.txt
 
 Aucune ligne CSV à écrire : `/api/admin/catalog/sync` détecte le fichier. Pour conserver un titre réel avec une clé anonymisée, fournir un en-tête explicite ou préserver la ligne CSV d'origine. Le minimum reste **10 000 mots**.
 
-## 4. Téléchargeur Python indépendant
+## 4. Alimenter les fichiers avec `fast_dl.py`
 
-Commande, depuis la racine :
+Depuis la racine du dépôt, créer puis activer un environnement virtuel :
 
 ```bash
-python3 scripts/download_sample_books.py --target 600
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install datasets
+python scripts/fast_dl.py
+deactivate
 ```
 
-Le script n'utilise plus la route `robot/harvest` (404 constaté en novembre 2026). Il applique la stratégie suivante :
+Sous Windows PowerShell, l'activation se fait avec `.\.venv\Scripts\Activate.ps1`. Pour réutiliser un environnement déjà créé, il suffit de le réactiver. Le fichier `.env` de Docker Compose sert à configurer les conteneurs ; il ne remplace pas `.venv`.
 
-1. Télécharge **une seule fois** le fichier officiel [pg_catalog.csv.gz](https://www.gutenberg.org/cache/epub/feeds/pg_catalog.csv.gz) et le conserve dans `backend/data/gutenberg_catalog.csv.gz`.
-2. Analyse les champs officiels `Text#`, `Type`, `Title`, `Language`, `Authors`. Il ne retient que les publications de type **Text** en anglais. Les titres et auteurs viennent **du catalogue**, jamais du nom de fichier ou du contenu téléchargé.
-3. Télécharge les textes simples depuis les [miroirs publiés par Gutenberg](https://www.gutenberg.org/dirs/MIRRORS.ALL) : `https://gutenberg.pglaf.org/cache/epub/<id>/pg<id>.txt`, puis `https://mirror.cs.odu.edu/gutenberg-epub/<id>/pg<id>.txt`. Des chemins alternatifs dans le miroir principal sont testés si nécessaire. Il ne scrute pas les pages HTML du site principal.
-4. Respecte **au minimum 2 secondes** entre requêtes, limite le volume par fichier et réessaie avec attente progressive pour les erreurs transitoires (429 / 5xx). Les 404 de fichiers absents déclenchent une recherche sur les autres chemins, pas l'arrêt global.
-5. Retire l'entête et la licence Project Gutenberg, puis vérifie **au moins 10 000 mots** de contenu effectif et sauvegarde le corps en UTF-8 sous un `storage_key` SHA-256 opaque.
-6. Écrit les métadonnées dans `backend/data/catalog.csv` et le curseur dans `backend/data/download_state.json`. Les fichiers de sortie sont écrits atomiquement. Le script reprend après interruption et utilise le catalogue mis en cache pour ne pas déplacer son curseur.
-7. S'arrête uniquement si la cible est atteinte, si tous les candidats sont épuisés ou en présence d'une erreur réseau non résolue. Un nombre demandé (`--target`) ne constitue pas une preuve de téléchargement : exécuter `verify_local_corpus.py`.
+Le script applique les étapes suivantes :
 
-**Préflight réseau, sans toucher aux fichiers :**
+1. Ouvre le jeu de données Hugging Face `AdhyanshVerma/pg-en`, split `train`, avec `load_dataset(..., streaming=True)`.
+2. Lit le champ `text` de chaque entrée et ignore les textes vides ou de moins de 10 000 mots.
+3. Écrit le texte en UTF-8 dans `backend/data/books/book_0001.txt`, puis `book_0002.txt`, etc.
+4. S'arrête lorsque `target = 1664` est atteint ou lorsque le flux est épuisé ; affiche la progression tous les 100 livres et le nombre final sauvegardé.
 
-```bash
-python3 scripts/download_sample_books.py --probe
-```
+Le chemin de sortie est relatif au répertoire courant : **lancer le script depuis la racine du dépôt**. La cible se modifie dans le script ; `fast_dl.py` ne propose pas d'argument `--target`. Le script ne filtre pas explicitement les langues et ne sauvegarde ni les métadonnées séparées ni un identifiant Gutenberg. Le backend extrait ce qu'il peut retrouver dans le texte.
 
-**Petit lot de validation :**
+**Le script ne reprend pas un téléchargement interrompu** : chaque exécution repart de `book_0001.txt` et écrase les fichiers de même nom. Il ne supprime pas les autres fichiers déjà présents dans le dossier. Si le corpus est déjà disponible, passer directement au démarrage Docker Compose et à la synchronisation. Attendre la fin du téléchargement avant de synchroniser.
+
+`fast_dl.py` ne crée pas `catalog.csv`. Après le démarrage du backend, appeler `/api/admin/catalog/sync`, puis contrôler le corpus :
 
 ```bash
-python3 scripts/download_sample_books.py --target 3 --max-candidates 50
-python3 scripts/verify_local_corpus.py --target 3
-```
-
-**Corpus de développement et corpus final :**
-
-```bash
-python3 scripts/download_sample_books.py --target 600
-python3 scripts/verify_local_corpus.py --target 600
-
-python3 scripts/download_sample_books.py --target 1664
+curl -X POST 'http://localhost:8080/api/admin/catalog/sync'
 python3 scripts/verify_local_corpus.py --target 1664
 ```
 
-Pour reprendre après interruption, **relancer la même commande**. Le catalogue officiel est conservé localement ; `--refresh-catalog` force son renouvellement et remet le curseur de téléchargement à zéro, sans supprimer les livres déjà acceptés. `--mirror https://mirror.cs.odu.edu/gutenberg-epub` permet de sélectionner l'autre miroir officiel. `--verbose` fournit plus de détails.
+Le vérificateur nécessite le CSV et utilise uniquement la bibliothèque standard Python. La procédure complète, y compris l'indexation, figure en section 14.
 
-Aucune clé API, aucun RapidAPI, aucun accès réseau depuis Spring Boot. Le downloader Python utilise uniquement la bibliothèque standard. Le site Gutenberg recommande l'utilisation de ses miroirs pour les récupérations en nombre : [Robot access](https://www.gutenberg.org/policy/robot_access.html), [mirrors](https://www.gutenberg.org/dirs/MIRRORS.ALL), [catalogue hors ligne](https://www.gutenberg.org/ebooks/offline_catalogs.html). Vérifier le droit d'auteur applicable dans le pays avant redistribution. Les fichiers `data/books` ne sont pas commités dans Git.
+### Téléchargeurs alternatifs
+
+`download_sample_books.py` et `download_books_rsync.py` restent dans le dépôt. Ils utilisent le catalogue officiel Gutenberg, écrivent leurs métadonnées dans le CSV et disposent de mécanismes de reprise différents de `fast_dl.py`. Ils ne sont pas nécessaires au lancement courant ; consulter leurs options si besoin :
+
+```bash
+python3 scripts/download_sample_books.py --help
+python3 scripts/download_books_rsync.py --help
+```
 
 ## 5. Migrations Flyway et base SQL
 
@@ -369,23 +369,38 @@ Les classes `*ExceptionHandler` produisent les messages JSON `{"error":"..."}` p
 
 ## 14. Ordre d'exploitation et exemples shell
 
-Depuis `search-engine-main/backend` :
+### Démarrage Docker Compose
+
+Après le téléchargement des TXT décrit en section 4, lancer depuis la racine :
 
 ```bash
-# Configuration locale PostgreSQL : ne jamais committer de mot de passe.
-export DB_PASSWORD='votre_mot_de_passe'
-mvn clean test
-mvn spring-boot:run
+docker compose up -d --build
+docker compose ps
+docker compose logs -f backend
 ```
 
-Depuis un second terminal :
+Compose construit le backend avec Maven et Java 21, puis l'exécute dans une image JRE 21. PostgreSQL 16 tourne dans le service `postgres` ; le backend attend son contrôle de santé avant de démarrer. Flyway applique les migrations au lancement de Spring Boot. Java, Maven et PostgreSQL ne sont pas requis sur l'hôte pour ce mode de lancement.
+
+`./backend/data` est monté dans `/app/data` du backend : les TXT téléchargés sur l'hôte et le CSV généré dans le conteneur sont partagés. Ce montage doit être accessible en lecture et en écriture à l'utilisateur du conteneur. PostgreSQL conserve ses données dans le volume `postgres_data`. Seul le port **8080** du backend est publié ; PostgreSQL reste sur le réseau interne Compose.
+
+Une fois Spring Boot démarré, quitter le suivi des logs avec `Ctrl+C` et vérifier l'API :
 
 ```bash
-curl -X POST 'http://localhost:8080/api/admin/catalog/sync?prune=true'
+curl 'http://localhost:8080/api/health'
+```
+
+### Préparation de la recherche
+
+Depuis la racine, dans cet ordre :
+
+```bash
+curl -X POST 'http://localhost:8080/api/admin/catalog/sync'
+python3 scripts/verify_local_corpus.py --target 1664
 curl 'http://localhost:8080/api/admin/catalog/status'
-curl 'http://localhost:8080/api/admin/indexing/status'
 curl -X POST 'http://localhost:8080/api/admin/indexing/all?maxBooks=2000'
 curl 'http://localhost:8080/api/admin/indexing/status'
+
+# Attendre unindexedBooks=0 avant de construire le graphe puis PageRank.
 curl -X POST 'http://localhost:8080/api/admin/similarity/rebuild'
 curl -X POST 'http://localhost:8080/api/admin/ranking/pagerank/rebuild'
 curl 'http://localhost:8080/api/admin/ranking/pagerank/status'
@@ -394,9 +409,47 @@ curl --get 'http://localhost:8080/api/search/advanced' --data-urlencode 'regex=m
 curl --get 'http://localhost:8080/api/search/suggestions' --data-urlencode 'q=man'
 ```
 
-Si `sync` a invalidé l'index pour certains livres : le service `/api/admin/indexing/all` ne traite que les livres sans postings. En cas d'interruption, relancer jusqu'à `unindexedBooks=0`. Sur des corpus importants, utiliser des lots de 100–500 pour surveiller la durée.
+Compose ne déclenche pas ces traitements automatiquement. Si `sync` a invalidé l'index pour certains livres, `/api/admin/indexing/all` ne traite que les livres sans postings. En cas d'interruption, relancer jusqu'à `unindexedBooks=0` et vérifier les échecs dans les réponses. Pour retirer de la base les livres absents du dossier, utiliser `sync?prune=true` ; le bouton de synchronisation du frontend emploie cette option.
 
-### Vérifications SQL
+### Frontend local
+
+Dans un autre terminal, depuis la racine, avec Node.js 22.22.0 minimum et npm :
+
+```bash
+cd front
+npm install
+npm run build
+npm run dev
+```
+
+Le frontend se lance séparément de Docker Compose. Ouvrir l'adresse indiquée par Vite, généralement `http://localhost:5173`. Il appelle l'API `http://localhost:8080` par défaut. `npm run start` permet de servir le build produit à la place du serveur de développement. Voir le [README frontend](../front/README.md) pour `VITE_API_BASE_URL` et les vérifications TypeScript.
+
+### Arrêt et mises à jour
+
+Depuis la racine :
+
+```bash
+# Redémarrage habituel.
+docker compose up -d
+
+# Après une modification du backend.
+docker compose up -d --build backend
+
+# Arrêt sans suppression des données PostgreSQL.
+docker compose down
+```
+
+Arrêter le frontend avec `Ctrl+C`. L'option `down -v` efface le volume PostgreSQL. Après modification du corpus, reprendre synchronisation → indexation → Jaccard → PageRank.
+
+### Vérifications SQL dans le conteneur
+
+Le port PostgreSQL n'étant pas publié sur l'hôte, ouvrir une session SQL via Compose :
+
+```bash
+docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+```
+
+Puis exécuter :
 
 ```sql
 SELECT COUNT(*) AS livres FROM books WHERE status='READY';
@@ -407,11 +460,27 @@ SELECT COUNT(*) AS scores_pagerank FROM book_pageranks;
 SELECT id, title, storage_key, word_count FROM books ORDER BY id LIMIT 10;
 ```
 
-Un corpus synchronisé de 600 fichiers valides donnera 600 livres `READY` **si `prune=true`** et que le CSV contient exactement 600 entrées. Le nombre de postings, arêtes et scores dépend du contenu et des seuils réels.
+Un corpus synchronisé de 1 664 fichiers valides donne 1 664 livres `READY` si le CSV contient exactement ces entrées et que la base ne conserve aucune ancienne entrée supplémentaire. Le nombre de postings, d'arêtes et de scores dépend du contenu et des seuils réels.
 
 ## 15. Configuration
 
-Variables d'environnement principales :
+### Configuration Docker Compose
+
+Compose lit les variables du shell ou d'un fichier `.env` placé à la racine. Les valeurs par défaut de développement sont :
+
+| Variable Compose | Valeur par défaut | Fonction |
+| --- | --- | --- |
+| `DB_NAME` | `idrisdatabase` | Nom de la base créée par PostgreSQL et utilisée par le backend |
+| `DB_USER` | `ai222829` | Utilisateur PostgreSQL |
+| `DB_PASSWORD` | `devpassword` | Mot de passe de développement |
+
+Le service backend reçoit `DB_URL=jdbc:postgresql://postgres:5432/<DB_NAME>`, `BOOK_STORAGE_ROOT=/app/data/books`, `BOOK_CATALOG=/app/data/catalog.csv` et `BOOK_MIN_WORDS=10000`. Le nom `postgres` est résolu sur le réseau Compose. Le fichier `.env` n'est pas un environnement virtuel Python et ne doit pas être commité.
+
+Les paramètres `POSTGRES_*` initialisent un volume vide : modifier les valeurs de `.env` ne renomme pas automatiquement une base existante et ne change pas son mot de passe. Les autres variables applicatives ne sont transmises au conteneur que si elles sont déclarées dans son bloc `environment`.
+
+### Variables de l'application Spring Boot
+
+Les valeurs suivantes viennent d'`application.yaml`. Compose remplace les chemins et paramètres de connexion comme indiqué ci-dessus :
 
 | Variable | Valeur par défaut | Fonction |
 | --- | --- | --- |
@@ -422,7 +491,8 @@ Variables d'environnement principales :
 | `BOOK_CATALOG` | `./data/catalog.csv` | manifeste CSV |
 | `BOOK_MIN_WORDS` | `10000` | seuil, ne peut pas être abaissé sous 10 000 |
 | `BOOK_MAX_TEXT_BYTES` | `25000000` | borne par fichier |
-| `RANKING_LEXICAL_WEIGHT` | `0.85` | pondération lexicale |
+| `LEXICAL_WEIGHT` | `0.85` | pondération lexicale |
+| `PAGERANK_WEIGHT` | `0.15` | pondération PageRank dans le classement |
 | `RANKING_PAGERANK_WEIGHT` | `0.15` | pondération PageRank |
 | `PAGERANK_DAMPING_FACTOR` | `0.85` | amortissement |
 | `PAGERANK_TOLERANCE` | `1e-10` | convergence |
@@ -434,15 +504,30 @@ Autres paramètres `SIMILARITY_*` et `SUGGESTION_*` sont définis et commentés 
 
 ## 16. Tests, limites et sécurité
 
-Tests locaux :
+Depuis la racine, après génération du catalogue :
 
 ```bash
+python3 scripts/verify_local_corpus.py --target 1664
 python3 -m unittest discover -s scripts -p 'test_*.py' -v
-python3 scripts/verify_local_corpus.py --target 600
-cd backend && mvn clean test
 ```
 
-Le downloader Python est testé avec un catalogue officiel simulé et des réponses TXT synthétiques (y compris HTTP 404 et reprise), **pas sur les 600 ouvrages réels dans cet environnement**. Vérifier chaque archive effectivement téléchargée via `verify_local_corpus.py` et inspecter les comptes `catalogBooks`, `readyBooks`, `indexedBooks` ; ne pas confondre une cible demandée avec un téléchargement réalisé.
+Les tests Python concernent les téléchargeurs alternatifs ; ils ne constituent pas un test réseau de `fast_dl.py`. Vérifier le corpus effectivement téléchargé et les compteurs `catalogBooks`, `readyBooks` et `indexedBooks`.
+
+Pour les tests Java, installer un JDK 21 ou supérieur et Maven sur l'hôte. Les tests unitaires peuvent être lancés sans le test de démarrage Spring :
+
+```bash
+mvn -f backend/pom.xml -Dtest='*,!BackendApplicationTests' test
+```
+
+La suite complète (`mvn -f backend/pom.xml test`) inclut `BackendApplicationTests`, qui nécessite une base PostgreSQL accessible avec `DB_URL`, `DB_USER` et `DB_PASSWORD` configurés. Le Compose courant ne publie pas PostgreSQL sur `localhost:5432`. La construction Docker utilise `-DskipTests` et ne remplace donc pas l'exécution des tests.
+
+Pour vérifier le frontend :
+
+```bash
+cd front
+npm run typecheck
+npm run build
+```
 
 - Les fichiers sont UTF-8 après téléchargement ; le backend est exclusivement local.
 - Ne committer **ni les livres ni les identifiants de base**. Le `data` réel est exclu de Git (sauf exemple CSV et `.gitkeep`).
